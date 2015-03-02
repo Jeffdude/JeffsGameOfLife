@@ -19,19 +19,17 @@ class Cell():
                 self.isFood = True
                 return
 
-            decision = int(random.random() * 6)
-            if self.energy > 45 and decision < 3:
+            if self.energy > 45:
                 if self.reproduce():
-                    self.energy -= 20
+                    self.energy -= 30
                     return
-            elif self.energy > 0 and decision < 5:
+            elif self.energy > 0: 
                 if self.eat():
                     return
-                else: 
-                    self.randomWalk()
-                    return
+                else:
+                    self.energy -= 2
             else:
-                self.energy -= 5
+                self.energy -= 2
                 return
 
 
