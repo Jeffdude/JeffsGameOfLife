@@ -10,11 +10,13 @@ from environment import Cell
 
 #DEFINE CONSTANTS
 
-MAX_X = 134
-MAX_Y = 134
-SIZE = 6
+MAX_X = 268
+MAX_Y = 268
+SIZE = 3
 
 WHITE = (255, 255, 255)
+GREEN = (0, 80, 0)
+RED = (150, 0, 0)
 BLACK = (0, 0, 0)
 
 pygame.init()
@@ -25,23 +27,30 @@ screen.fill(WHITE)
 # creating the world
 myWorld = World(MAX_X, MAX_Y)
 # adding a single cell
-myCell = myWorld.addCell( Cell(myWorld, 50, 50) )
+myWorld.reviveCell(124,124,150)
 
 
 # Used to draw the cell
 def drawCell(c):
     if(c.x < 0  or  c.x > MAX_X  or  c.y < 0  or  c.y > MAX_Y):
         return False
-    pygame.draw.rect(screen, BLACK, ((c.x * SIZE, c.y * SIZE), (SIZE, SIZE)))
+    if(c.isFood):
+        cell_color = (0,0 ,(5 * c.energy)%255)
+        pygame.draw.rect(screen, cell_color, ((c.x * SIZE, c.y * SIZE), (SIZE, SIZE)))
+    else:
+        cell_color = ((c.energy*10)%255, 40, 0)
+        pygame.draw.rect(screen, cell_color, ((c.x * SIZE, c.y * SIZE), (SIZE, SIZE)))
+
     return True
 
 
 # Main Loop
 while True:
     screen.fill(WHITE)
-    for cell in myWorld.cells:
-        cell.update()
-        drawCell(cell)
+    for column in myWorld.cells:
+        for cell in column:
+            cell.update()
+            drawCell(cell)
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
