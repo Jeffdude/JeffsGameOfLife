@@ -7,12 +7,12 @@ import pygame, random, time, sys
 from pygame.locals import *
 
 #DEFINE CONSTANTS
-RESOLUTION = 2
+RESOLUTION = 4
 
-VIEW_WIDTH = 500 * RESOLUTION
-VIEW_HEIGHT = 500 * RESOLUTION
-WORLD_WIDTH = 500 * RESOLUTION
-WORLD_HEIGHT = 500 * RESOLUTION
+VIEW_WIDTH   = 256 * RESOLUTION
+VIEW_HEIGHT  = 256 * RESOLUTION
+WORLD_WIDTH  = 256 * RESOLUTION
+WORLD_HEIGHT = 256 * RESOLUTION
 
 WHITE = (255, 255, 255)
 
@@ -98,6 +98,8 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     rHeight = rAvg + rHMod
     heightMap[origCoord[0] + width][origCoord[1] + centerL] = rHeight
 
+#    randMagnitude = randMagnitude - 2 * random.random()
+
     # recursive calls
     # top left square
     diamondSquare(heightMap, origCoord, centerW, centerL, randMagnitude)
@@ -112,20 +114,22 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     diamondSquare(heightMap, brOrig, centerW, centerL, randMagnitude)
 
 pygame.init()
-pygame.display.set_caption('')
+pygame.display.set_caption('What SHOULD be the diamond square algorithm')
 screen = pygame.display.set_mode([VIEW_WIDTH, VIEW_HEIGHT])
 screen.fill(WHITE)
 heightMap = generateHeightMap(WORLD_WIDTH, WORLD_HEIGHT, RESOLUTION)
 
-for x in range(len(heightMap)):
-    for y in range(len(heightMap[1])):
-        drawHeight(x, y, RESOLUTION, heightMap[x][y])
-
 while True:
+    for x in range(len(heightMap)):
+        for y in range(len(heightMap[1])):
+            drawHeight(x, y, RESOLUTION, heightMap[x][y])
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == KEYDOWN:
+            if event.key == K_r:
+                heightMap = generateHeightMap(WORLD_WIDTH, WORLD_HEIGHT, RESOLUTION)
     pygame.display.update()
 
 
