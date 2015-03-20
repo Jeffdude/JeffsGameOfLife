@@ -22,18 +22,14 @@ class Cell():
             self.age += 1
             if self.energy > 40 and self.age > 2:
                 if self.reproduce(39):
-#                    print('r')
                     self.energy += 1
                     return
                 else:
-#                    print('fr')
                     self.energy -= 8
             elif self.energy > 15: 
                 if self.eat():
-#                    print('e')
                     return
                 else:
-#                    print('fe')
                     self.energy -= 5
             elif self.energy <= 15:
                 self.isFood = True
