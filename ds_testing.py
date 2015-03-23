@@ -68,10 +68,10 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     # debug:
     # print('-- ds called on coords ({},{}) with width {} and length {} ---'.format(origCoord[0], origCoord[1], width, length))
     if width != int(width):
-        print('Width division disparity:{} -> {}'.format(width, int(width)))
+        print('Width integer disparity:{} -> {}'.format(width, int(width)))
         width = int(width)
     if length != int(length):
-        print('Length division disparity:{} -> {}'.format(length, int(length)))
+        print('Length integer disparity:{} -> {}'.format(length, int(length)))
         length = int(length)
 
     # base case
@@ -79,12 +79,12 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
         return
     
     # coordinate formatting
-    x, y = origCoord # origCoord = (x,y)
+    x, y = origCoord 
     # ensure the given origCoords are valid 
     if x != int(x):
-        print('Central x integer disparity:{} -> {}'.format(x, int(x)))
+        print('width integer disparity:{} -> {}'.format(x, int(x)))
     if y != int(y):
-        print('Central y integer disparity:{} -> {}'.format(y, int(y)))
+        print('length integer disparity:{} -> {}'.format(y, int(y)))
     
     # get corner values
     tl = heightMap[x][y]
@@ -97,10 +97,8 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     centerL = int(length/2)
     if width/2 != int(width/2):
         print('Central width division disparity:{} -> {}'.format(width/2, int(width/2)))
-        centerW = int(width/2)
     if length/2 != int(length/2):
         print('Central length division disparity:{} -> {}'.format(length/2, int(length/2)))
-        centerL = int(length/2)
 
     ### Square ### 
     # generate and assign center height
@@ -118,7 +116,6 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     if y + length + centerL < len(heightMap[0]):
         bOff = heightMap[int(x + centerW)][int(y + length + centerL)]
     if x + width + centerW < len(heightMap):
-        #print(x + width + centerW)
         rOff = heightMap[int(x + width + centerW)][int(y - centerL)]
 
     # generate and assign edge heights
@@ -152,16 +149,17 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     brOrig = (x + centerW, y + centerL)
     diamondSquare(heightMap, brOrig, centerW, centerL, randMagnitude)
 
-def drawMap():
+def createMap():
+    heightMap = generateHeightMap(WORLD_WIDTH, WORLD_LENGTH)
     for x in range(len(heightMap)):
         for y in range(len(heightMap[0])):
             drawHeight(x, y, RESOLUTION, heightMap[x][y])
+
 pygame.init()
-pygame.display.set_caption('What SHOULD be the diamond square algorithm')
+pygame.display.set_caption('Recursive diamond square algorithm')
 screen = pygame.display.set_mode([VIEW_WIDTH, VIEW_LENGTH])
 screen.fill(WHITE)
-heightMap = generateHeightMap(WORLD_WIDTH, WORLD_LENGTH)
-drawMap()
+createMap()
 
 while True:
     for event in pygame.event.get():
@@ -170,6 +168,5 @@ while True:
             sys.exit()
         if event.type == KEYDOWN:
             if event.key == K_r:
-                heightMap = generateHeightMap(WORLD_WIDTH, WORLD_LENGTH)
-                drawMap()
+                createMap()
     pygame.display.update()
