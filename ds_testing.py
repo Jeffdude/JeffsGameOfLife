@@ -5,76 +5,121 @@ Written by Jeff
 """
 import pygame, random, time, sys
 from pygame.locals import *
+from color import *
 
 #DEFINE CONSTANTS
-RESOLUTION = 4
+RESOLUTION = 2
 
-VIEW_WIDTH   = 256 * RESOLUTION
-VIEW_HEIGHT  = 256 * RESOLUTION
-WORLD_WIDTH  = 256 * RESOLUTION
-WORLD_HEIGHT = 256 * RESOLUTION
+WORLD_WIDTH  = 512 + 1
+WORLD_LENGTH = 512 + 1
+VIEW_WIDTH   = WORLD_WIDTH * RESOLUTION
+VIEW_LENGTH  = WORLD_LENGTH * RESOLUTION
 
 WHITE = (255, 255, 255)
 
+def makeColor(toColorize):
+    maxColorizable = 850
+    if toColorize < maxColorizable:
+        return rgb(toColorize,0,maxColorizable)
+    else:
+        print("Color exceeds max colorizable value")
+        return (0,0,0)
+
 def drawHeight(x, y, res, height):
-    if(x < 0 or y < 0 or x > VIEW_WIDTH or y > VIEW_HEIGHT):
+    if(x < 0 or y < 0 or x > WORLD_WIDTH or y > WORLD_LENGTH):
         return False
-    color = (0, 0, (50 + 10*height)%255) 
+    color = makeColor(height)
     pygame.draw.rect(screen, color, ((x * res, y * res),(res, res)))
     return True
 
-def generateHeightMap(worldWidth, worldLength, resolution):
-    resWidth = int(worldWidth/resolution)
-    resLength = int(worldLength/resolution)
+def checkWorldParams(width, length):
+    """ ensure width, length are of the for 2^n where n < 20"""
+    wAcceptable = lAcceptable = False
+    for i in range(20):
+        p = 2**i
+        if p == width:
+            wAcceptable = True
+        if p == length:
+            lAcceptable = True
+    return not wAcceptable or not lAcceptable
+def generateHeightMap(worldWidth, worldLength):
+    """ generate a heightmap of width worldWidth and length worldLength using
+    the diamond square algorithm"""
+
+    if not checkWorldParams(worldWidth, worldLength):
+        raise ValueError("world width or world height not in the form of 2^n where n < 20")
+
     startHeight = 10
-    randMagnitude = 15
-    heightMap = [[startHeight for x in range(int(resWidth))] for y in range(int(resWidth))]
+    randMagnitude = 100
+
+    # creating the map
+    heightMap = [[startHeight for x in range(worldWidth)] for y in range(worldLength)]
 
     # first, randomly seed the corners
-    heightMap[0][0] = random.random() * (2 * randMagnitude)
-    heightMap[resWidth - 1][0] = random.random() * (2 * randMagnitude)
-    heightMap[0][resLength - 1] = random.random() * (2 * randMagnitude)
-    heightMap[resWidth - 1][resLength - 1] = random.random() * (2 * randMagnitude)
+    heightMap[0][0] = random.random() * randMagnitude
+    heightMap[worldWidth - 1][0] = random.random() * randMagnitude
+    heightMap[0][worldLength - 1] = random.random() * randMagnitude
+    heightMap[worldWidth - 1][worldLength - 1] = random.random() * randMagnitude
     # then, begin diamond square algorithm
-    diamondSquare(heightMap, (0,0), resWidth - 1, resLength - 1, randMagnitude)
+    diamondSquare(heightMap, (0,0), worldWidth - 1, worldLength - 1, randMagnitude)
     return heightMap
 
 def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
-    width = int(width)
-    length = int(length)
+    # debug:
+    # print('-- ds called on coords ({},{}) with width {} and length {} ---'.format(origCoord[0], origCoord[1], width, length))
+    if width != int(width):
+        print('Width division disparity:{} -> {}'.format(width, int(width)))
+        width = int(width)
+    if length != int(length):
+        print('Length division disparity:{} -> {}'.format(length, int(length)))
+        length = int(length)
 
     # base case
     if width <= 1 or length <= 1:
         return
     
-    # get corner values
-    tl = heightMap[origCoord[0]][origCoord[1]]
-    tr = heightMap[int(origCoord[0] + width)][origCoord[1]]
-    bl = heightMap[origCoord[0]][int(origCoord[1] + length)]
-    br = heightMap[int(origCoord[0] + width)][int(origCoord[1] + length)]
+    # coordinate formatting
+    x, y = origCoord # origCoord = (x,y)
+    # ensure the given origCoords are valid 
+    if x != int(x):
+        print('Central x integer disparity:{} -> {}'.format(x, int(x)))
+    if y != int(y):
+        print('Central y integer disparity:{} -> {}'.format(y, int(y)))
     
-    # locate center
+    # get corner values
+    tl = heightMap[x][y]
+    tr = heightMap[int(x + width)][y]
+    bl = heightMap[x][int(y + length)]
+    br = heightMap[int(x + width)][int(y + length)]
+    
+    # locate center and ensure proper coordinate division occurs
     centerW = int(width/2)
     centerL = int(length/2)
+    if width/2 != int(width/2):
+        print('Central width division disparity:{} -> {}'.format(width/2, int(width/2)))
+        centerW = int(width/2)
+    if length/2 != int(length/2):
+        print('Central length division disparity:{} -> {}'.format(length/2, int(length/2)))
+        centerL = int(length/2)
 
     ### Square ### 
     # generate and assign center height
     avg = (tl + tr + bl + br) / 4
-    heightMod = random.random() * (2 * randMagnitude)
-    cHeight = avg + heightMod
-    heightMap[origCoord[0] + centerW][origCoord[1] + centerL] = cHeight
+    cHeight = avg + random.random() * randMagnitude
+    heightMap[x + centerW][y + centerL] = cHeight
 
     ### Diamond ###
     # get off-side values if they exist, 10 is default
     tOff = lOff = bOff = rOff = 10  
-    if origCoord[1] - centerL > 0:
-        tOff = heightMap[int(origCoord[0] + centerW)][int(origCoord[1] - centerL)]
-    if origCoord[0] - centerW > 0:
-        lOff = heightMap[int(origCoord[0] - centerW)][int(origCoord[1] + centerL)]
-    if origCoord[1] + length + centerL <= len(heightMap[0]):
-        bOff = heightMap[int(origCoord[0] + centerW)][int(origCoord[1] + length + centerL)]
-    if origCoord[0] + width + centerW <= len(heightMap):
-        rOff = heightMap[int(origCoord[0] + width + centerW)][int(origCoord[1] - centerL)]
+    if y - centerL >= 0:
+        tOff = heightMap[int(x + centerW)][int(y - centerL)]
+    if x - centerW >= 0:
+        lOff = heightMap[int(x - centerW)][int(y + centerL)]
+    if y + length + centerL < len(heightMap[0]):
+        bOff = heightMap[int(x + centerW)][int(y + length + centerL)]
+    if x + width + centerW < len(heightMap):
+        #print(x + width + centerW)
+        rOff = heightMap[int(x + width + centerW)][int(y - centerL)]
 
     # generate and assign edge heights
     tAvg = int((tl + tr + cHeight + tOff) / 4)
@@ -82,78 +127,49 @@ def diamondSquare(heightMap, origCoord, width, length, randMagnitude):
     rAvg = int((tr + br + cHeight + rOff) / 4)
     bAvg = int((bl + br + cHeight + bOff) / 4)
     # top
-    tHMod = random.random() * (2 * randMagnitude)
-    tHeight = tAvg + tHMod
-    heightMap[origCoord[0] + centerW][origCoord[1]] = tHeight
+    tHeight = tAvg + random.random() * randMagnitude
+    heightMap[x + centerW][y] = tHeight
     # left
-    lHMod = random.random() * (2 * randMagnitude)
-    lHeight = lAvg + lHMod
-    heightMap[origCoord[0]][origCoord[1] - centerL] = lHeight
+    lHeight = lAvg + random.random() * randMagnitude
+    heightMap[x][y - centerL] = lHeight
     # bottom
-    bHMod = random.random() * (2 * randMagnitude)
-    bHeight = bAvg + bHMod
-    heightMap[origCoord[0] + centerW][origCoord[1] + length] = bHeight
+    bHeight = bAvg + random.random() * randMagnitude
+    heightMap[x + centerW][y + length] = bHeight
     # right
-    rHMod = random.random() * (2 * randMagnitude)
-    rHeight = rAvg + rHMod
-    heightMap[origCoord[0] + width][origCoord[1] + centerL] = rHeight
-
-#    randMagnitude = randMagnitude - 2 * random.random()
+    rHeight = rAvg + random.random() * randMagnitude
+    heightMap[x + width][y + centerL] = rHeight
 
     # recursive calls
     # top left square
     diamondSquare(heightMap, origCoord, centerW, centerL, randMagnitude)
     # top right square
-    trOrig = (origCoord[0] + centerW, origCoord[1])
+    trOrig = (x + centerW, y)
     diamondSquare(heightMap, trOrig, centerW, centerL, randMagnitude)
     # bottom left square
-    blOrig = (origCoord[0], origCoord[1] + centerL)
+    blOrig = (x, y + centerL)
     diamondSquare(heightMap, blOrig, centerW, centerL, randMagnitude)
     # bottom right square
-    brOrig = (origCoord[0] + centerW, origCoord[1] + centerL)
+    brOrig = (x + centerW, y + centerL)
     diamondSquare(heightMap, brOrig, centerW, centerL, randMagnitude)
 
+def drawMap():
+    for x in range(len(heightMap)):
+        for y in range(len(heightMap[0])):
+            drawHeight(x, y, RESOLUTION, heightMap[x][y])
 pygame.init()
 pygame.display.set_caption('What SHOULD be the diamond square algorithm')
-screen = pygame.display.set_mode([VIEW_WIDTH, VIEW_HEIGHT])
+screen = pygame.display.set_mode([VIEW_WIDTH, VIEW_LENGTH])
 screen.fill(WHITE)
-heightMap = generateHeightMap(WORLD_WIDTH, WORLD_HEIGHT, RESOLUTION)
+heightMap = generateHeightMap(WORLD_WIDTH, WORLD_LENGTH)
+drawMap()
 
 while True:
-    for x in range(len(heightMap)):
-        for y in range(len(heightMap[1])):
-            drawHeight(x, y, RESOLUTION, heightMap[x][y])
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
         if event.type == KEYDOWN:
             if event.key == K_r:
-                heightMap = generateHeightMap(WORLD_WIDTH, WORLD_HEIGHT, RESOLUTION)
+                heightMap = generateHeightMap(WORLD_WIDTH, WORLD_LENGTH)
+                drawMap()
     pygame.display.update()
-
-
-
-
-def generateHeightMapOld(worldWidth, worldHeight, resolution):
-    resWidth = worldWidth/resolution
-    resHeight = worldHeight/resolution
-    numIterations = 10
-    numPoints = 10
-    modifiedCoords = []
-    startHeight = 10
-    heightRange = 100
-    heightMap = [[startHeight for x in range(resWidth)] for y in range(resWidth)]
-
-    for n in range(numIterations):
-        for i in range(numPoints):
-            coord = (-1,-1)
-            while coord not in modifiedCoords:
-                x = random.random() * resWidth
-                y = random.random() * resHeight
-                coord = (x, y)
-            modifiedCoords.append(coord)
-            heightVal = random.random() * (2 * heightRange)
-            heightVal = heightVal - (heightRange / 2)
-            heightMap[coord[0]][coord[1]] = heightVal + startHeight
-
